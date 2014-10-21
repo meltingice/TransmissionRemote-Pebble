@@ -23,6 +23,10 @@ var Transmission = (function () {
     });
   };
 
+  Transmission.prototype.post = function (endpoint, args, callback) {
+
+  };
+
   return Transmission;
 })();
 
@@ -42,9 +46,10 @@ var Messenger = (function () {
   }
 })();
 
-var messenger = new Messenger();
+var messenger = null;
 
 Pebble.addEventListener("ready", function(e) {
+  messenger = new Messenger();
   console.log("JS initialized");
 });
 
