@@ -1,7 +1,9 @@
 #include <pebble.h>
+#include "jsmn.h"
 
 static Window *window;
 static TextLayer *text_layer;
+static jsmn_parser parser;
 
 void out_sent_handler(DictionaryIterator *sent, void *context) {
    // outgoing message was delivered
@@ -14,7 +16,10 @@ void out_sent_handler(DictionaryIterator *sent, void *context) {
 
 
  void in_received_handler(DictionaryIterator *received, void *context) {
-   // incoming message received
+  jsmntok_t tokens[256];
+  jsmn_init_parser(&parser);
+
+  
  }
 
 
