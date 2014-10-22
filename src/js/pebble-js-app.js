@@ -81,9 +81,21 @@ var Messenger = (function () {
 
   Messenger.prototype.list = function (data) {
     this.t.list(function (resp) {
-      console.log(resp);
-      Pebble.sendAppMessage({action: 'list', data: JSON.stringify(resp)});
-    });
+      Pebble.sendAppMessage({action: 0, data: this.format_list(resp)});
+    }.bind(this));
+  };
+
+  Messenger.prototype.format_list = function (data) {
+    var result = [];
+    data.forEach(function (item) {
+      this.t.fields.forEach(function (field) {
+        result.push(item[field]);
+      }.bind(this));
+
+      result.push("__ENDITEM__");
+    }.bind(this));
+
+    return result.join("\n");
   };
 
   return Messenger;

@@ -1,15 +1,8 @@
 #include <pebble.h>
-#include "jsmn.h"
+#include <transmission.h>
 
 static Window *window;
 static TextLayer *text_layer;
-static jsmn_parser parser;
-
-enum {
-  TKEY_ACTION = 0,
-  TKEY_RESOURCE = 1,
-  TKEY_DATA = 2
-};
 
 static void out_sent_handler(DictionaryIterator *sent, void *context) {
   // outgoing message was delivered
@@ -20,33 +13,21 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
 }
 
 static void in_received_handler(DictionaryIterator *received, void *context) {
-  jsmntok_t tokens[256];
-  jsmnerr_t result;
-
+  Tuple *action = dict_find(received, TKEY_ACTION);
   Tuple *data = dict_find(received, TKEY_DATA);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received data!");
 
-  jsmn_init(&parser);
-  result = jsmn_parse(&parser, data->value->cstring, strlen(data->value->cstring), tokens, 256);
-  if (result == 0) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Successfully parsed JSON data");
+  switch (action->value->uint8) {
+    case ACTION_LIST: draw_list(data); break;
   }
 }
 
 static void in_dropped_handler(AppMessageResult reason, void *context) {
-  // incoming message dropped
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message was dropped: %d", reason);
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(text_layer, "Select");
 
-  DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
-  
-  Tuplet tuple = TupletCString(TKEY_ACTION, "list");
-  dict_write_tuplet(iter, &tuple);
-  
-  dict_write_end(iter);
-  app_message_outbox_send();
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -68,7 +49,7 @@ static void window_load(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
 
   text_layer = text_layer_create((GRect) { .origin = { 0, 72 }, .size = { bounds.size.w, 20 } });
-  text_layer_set_text(text_layer, "Press a button");
+  text_layer_set_text(text_layer, "Loading...");
   text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(text_layer));
 }
@@ -92,9 +73,10 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 
-  const uint32_t inbound_size = 64;
   const uint32_t outbound_size = 64;
-  app_message_open(inbound_size, outbound_size);
+  app_message_open(app_message_inbox_size_maximum(), outbound_size);
+
+  load_torrent_list();
 }
 
 static void deinit(void) {
