@@ -5,30 +5,48 @@ static Window *window;
 static TextLayer *text_layer;
 static jsmn_parser parser;
 
-void out_sent_handler(DictionaryIterator *sent, void *context) {
-   // outgoing message was delivered
- }
+enum {
+  TKEY_ACTION = 0,
+  TKEY_RESOURCE = 1,
+  TKEY_DATA = 2
+};
 
+static void out_sent_handler(DictionaryIterator *sent, void *context) {
+  // outgoing message was delivered
+}
 
- void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-   // outgoing message failed
- }
+static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
+  // outgoing message failed
+}
 
-
- void in_received_handler(DictionaryIterator *received, void *context) {
+static void in_received_handler(DictionaryIterator *received, void *context) {
   jsmntok_t tokens[256];
-  jsmn_init_parser(&parser);
+  jsmnerr_t result;
 
-  
- }
+  Tuple *data = dict_find(received, TKEY_DATA);
 
+  jsmn_init(&parser);
+  result = jsmn_parse(&parser, data->value->cstring, strlen(data->value->cstring), tokens, 256);
+  if (result == 0) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Successfully parsed JSON data");
+  }
+}
 
- void in_dropped_handler(AppMessageResult reason, void *context) {
-   // incoming message dropped
- }
+static void in_dropped_handler(AppMessageResult reason, void *context) {
+  // incoming message dropped
+}
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   text_layer_set_text(text_layer, "Select");
+
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+  
+  Tuplet tuple = TupletCString(TKEY_ACTION, "list");
+  dict_write_tuplet(iter, &tuple);
+  
+  dict_write_end(iter);
+  app_message_outbox_send();
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
